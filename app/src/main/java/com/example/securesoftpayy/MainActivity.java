@@ -1,14 +1,11 @@
-package com.example.securesoftpaysdkproject;
-
-import android.graphics.Color;
-import android.os.Bundle;
-import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
+package com.example.securesoftpayy;
 
 import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.Toast;
 
-import com.google.android.material.textfield.TextInputEditText;
+// SDK-এর প্রয়োজনীয় ক্লাসগুলো ইম্পোর্ট করা হচ্ছে
 import com.securesoft.pay.PaymentRequest;
 import com.securesoft.pay.PaymentResultListener;
 import com.securesoft.pay.SecureSoftPay;
@@ -16,86 +13,61 @@ import com.securesoft.pay.SecureSoftPayConfig;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextInputEditText nameInput, emailInput, amountInput;
-    private Button payButton;
-    private TextView resultTextView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        // UI উপাদানগুলো অ্যাক্সেস করা
-        nameInput = findViewById(R.id.nameInput);
-        emailInput = findViewById(R.id.emailInput);
-        amountInput = findViewById(R.id.amountInput);
-        payButton = findViewById(R.id.payButton);
-        resultTextView = findViewById(R.id.resultTextView);
+        // আপনার অ্যাপের লেআউট ফাইল এখানে সেট করুন।
+        // উদাহরণস্বরূপ, যদি আপনার লেআউটের নাম activity_main.xml হয়:
+        // setContentView(R.layout.activity_main);
 
-        // SDK চালু করা (Initialize)
-        // গুরুত্বপূর্ণ: এই কাজটি সাধারণত Application ক্লাসে একবার করা হয়।
-        // পরীক্ষার জন্য আমরা এটি এখানেই করছি।
-        initializeSdk();
+        // ★★★ মূল পরিবর্তন এখানে ★★★
+        // SDK initialize করার সময় এখন চারটি প্যারামিটারই প্রদান করতে হবে।
 
-        // Pay Now বাটনে ক্লিক করলে পেমেন্ট প্রক্রিয়া শুরু হবে
-        payButton.setOnClickListener(v -> initiatePayment());
-    }
+        String apiKey = "YOUR_SECRET_API_KEY_FROM_DASHBOARD";
+        String baseUrl = "https://pay.yourdomain.com/api"; // আপনার পেমেন্ট গেটওয়ের বেস ইউআরএল
+        String checkoutUrl = "https://pay.yourdomain.com/api/v1/checkout"; // পেমেন্ট শুরু করার সম্পূর্ণ ইউআরএল
+        String verifyUrl = "https://pay.yourdomain.com/api/v1/verify"; // পেমেন্ট ভেরিফাই করার সম্পূর্ণ ইউআরএল
 
-    private void initializeSdk() {
-        // !!! গুরুত্বপূর্ণ !!!
-        // নিচের apiKey এবং baseUrl আপনার নিজের ড্যাশবোর্ডের সঠিক তথ্য দিয়ে পরিবর্তন করুন।
+        // কনস্ট্রাক্টরটি এখন চারটি প্যারামিটার গ্রহণ করছে
         SecureSoftPayConfig config = new SecureSoftPayConfig(
-                "dd04af6fe51aec9b971ac371c67ac9ca3b2926a27d74f40404dbc5e05ba23225",
-                "https://pay.settings.top/api" // যেমন: "http://192.168.0.101/dashboard_project"
+                apiKey,
+                baseUrl,
+                checkoutUrl,
+                verifyUrl
         );
+
+        // SDK ইনিশিয়ালাইজ করা
         SecureSoftPay.initialize(config);
-    }
 
-    private void initiatePayment() {
-        String name = nameInput.getText().toString().trim();
-        String email = emailInput.getText().toString().trim();
-        String amountStr = amountInput.getText().toString().trim();
+        // --- পেমেন্ট প্রক্রিয়া শুরু করার উদাহরণ ---
+        // আপনার লেআউটে একটি বাটন থাকতে হবে যার আইডি payButton
+        // Button payButton = findViewById(R.id.payButton);
+        // payButton.setOnClickListener(v -> {
 
-        // ইনপুট ভ্যালিডেশন
-        if (amountStr.isEmpty()) {
-            amountInput.setError("Amount cannot be empty");
-            return;
-        }
+        // পেমেন্টের জন্য একটি রিকোয়েস্ট অবজেক্ট তৈরি করা
+        PaymentRequest request = new PaymentRequest(
+                150.50, // Example Amount
+                "John Doe", // Example Customer Name
+                "john.doe@example.com" // Example Customer Email
+        );
 
-        double amount;
-        try {
-            amount = Double.parseDouble(amountStr);
-        } catch (NumberFormatException e) {
-            amountInput.setError("Invalid amount");
-            return;
-        }
-
-        // ফলাফল দেখানোর জন্য TextView রিসেট করা
-        resultTextView.setText("Initiating payment...");
-        resultTextView.setTextColor(Color.BLACK);
-
-        // 1. SDK-এর জন্য একটি পেমেন্ট রিকোয়েস্ট তৈরি করা
-        PaymentRequest paymentRequest = new PaymentRequest(amount, name, email);
-
-        // 2. পেমেন্ট শুরু করা এবং ফলাফল পাওয়ার জন্য listener সেট করা
-        SecureSoftPay.startPayment(this, paymentRequest, new PaymentResultListener() {
+        // পেমেন্ট প্রক্রিয়া শুরু করা
+        SecureSoftPay.startPayment(MainActivity.this, request, new PaymentResultListener() {
             @Override
             public void onSuccess(String transactionId) {
                 // পেমেন্ট সফল হলে এই মেথডটি কল হবে
-                String successMessage = "Payment Successful!\nTransaction ID: " + transactionId;
-                resultTextView.setText(successMessage);
-                resultTextView.setTextColor(Color.parseColor("#28a745")); // Green color
-                Toast.makeText(MainActivity.this, "Payment Successful!", Toast.LENGTH_LONG).show();
+                // এখানে আপনার প্রয়োজনীয় কোড লিখুন
+                Toast.makeText(MainActivity.this, "Payment Success! TrxID: " + transactionId, Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onFailure(String errorMessage) {
                 // পেমেন্ট ব্যর্থ বা বাতিল হলে এই মেথডটি কল হবে
-                String failureMessage = "Payment Failed:\n" + errorMessage;
-                resultTextView.setText(failureMessage);
-                resultTextView.setTextColor(Color.parseColor("#dc3545")); // Red color
-                Toast.makeText(MainActivity.this, "Payment Failed!", Toast.LENGTH_LONG).show();
+                // এখানে আপনার প্রয়োজনীয় কোড লিখুন
+                Toast.makeText(MainActivity.this, "Payment Failed: " + errorMessage, Toast.LENGTH_LONG).show();
             }
         });
+        // });
     }
 }
